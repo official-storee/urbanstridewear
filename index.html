@@ -356,12 +356,14 @@ header.top.hide{transform:translateY(calc(-100% - env(safe-area-inset-top,0px)))
 .dealbar{display:grid;justify-items:center;gap:10px;padding:14px 16px;text-align:center}
 .dealbtn{border:0;border-radius:999px;width:166px;max-width:100%;height:42px;padding:0 12px;font:500 18px/1 var(--body);cursor:pointer;white-space:nowrap}
 .dealbtn:active{transform:scale(.98)}
-.dtimer{display:flex;align-items:flex-start;justify-content:center;gap:0;max-width:100%}
-.dt{display:grid;justify-items:center;gap:2px;width:46px;flex:none}
-.dt b{display:flex;justify-content:center;font:500 32px/1 var(--body)}
-.dt b span{display:block;width:.62em;text-align:center}
-.dt small{font:400 12px/1 var(--body);letter-spacing:.02em;white-space:nowrap}
-.dtimer i{font:500 32px/1 var(--body);font-style:normal;width:12px;flex:none;text-align:center}
+.dtimer{display:flex;align-items:flex-start;justify-content:center;gap:10px;max-width:100%}
+.dt{display:grid;justify-items:center;gap:5px;width:68px;flex:none}
+.dt .rg{position:relative;width:62px;height:62px}
+.dt svg{display:block;width:100%;height:100%;overflow:visible}
+.dt .trk{fill:none;stroke-width:3;opacity:.45}
+.dt .arc{fill:none;stroke-width:3;stroke-linecap:butt;transform:rotate(-90deg);transform-origin:36px 36px}
+.dt b{position:absolute;inset:0;display:grid;place-items:center;font:500 24px/1 var(--body);font-variant-numeric:tabular-nums}
+.dt small{font:400 12px/1 var(--body);letter-spacing:.01em;white-space:nowrap}
 @media(max-width:720px){.dealbar{margin-left:calc(-1*max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1*max(16px,env(safe-area-inset-right,0px)))}}
 /* size chart window */
 .scmask{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
@@ -822,23 +824,31 @@ button.launchbtn{width:100%;cursor:pointer}
       '<div class="fbot"><span>'+esc(f.copy)+'</span>'+bt+(isEditor?'<a class="sp" href="#admin">Admin</a>':'')+'</div></footer>';
   }
   function dealParts(ms){var q=Math.max(0,Math.floor(ms/1000));return {d:Math.floor(q/86400),h:Math.floor(q%86400/3600),m:Math.floor(q%3600/60),s:q%60};}
-  function dig(n){var t=pad2(n);return '<span>'+t.charAt(0)+'</span><span>'+t.charAt(1)+'</span>';}
   function pad2(n){return (n<10?'0':'')+n;}
   function dealLive(){var d=S.deal||{};var end=d.end?new Date(d.end).getTime():0;return !!d.on&&end>Date.now()?end-Date.now():0;}
   function dealHtml(r){
     var ms=dealLive();if(!ms)return '';
     if(r&&(S.deal.hide||[]).indexOf(r)>=0)return '';
     var d=S.deal,t=dealParts(ms);
-    function g(v,l,k){return '<div class="dt"><b data-dk="'+k+'" style="color:'+d.num+'">'+dig(v)+'</b><small style="color:'+d.lab+'">'+l+'</small></div>';}
+    function g(v,l,k){return '<div class="dt"><div class="rg"><svg viewBox="0 0 72 72" aria-hidden="true"><circle class="trk" cx="36" cy="36" r="32" stroke="'+d.lab+'"/><circle class="arc" data-ak="'+k+'" cx="36" cy="36" r="32" stroke="'+d.num+'" pathLength="100" stroke-dasharray="'+ringFrac(k,v)+' 100"/><g data-gk="'+k+'" style="transform:rotate('+Math.round(ringFrac(k,v)*3.6*10)/10+'deg);transform-origin:36px 36px"><circle cx="36" cy="4" r="4.5" fill="'+d.num+'"/></g></svg><b data-dk="'+k+'" style="color:'+d.num+'">'+v+'</b></div><small style="color:'+d.lab+'">'+l+'</small></div>';}
     return '<section class="dealbar" id="dealbar" style="background:'+d.bg+(d.bgImg?' url('+d.bgImg+') center/cover no-repeat':'')+'" aria-label="Deal"><button class="dealbtn" type="button" data-act="deal" style="background:'+d.btn+';color:'+d.btnText+'">'+esc(d.label)+'</button>'+
-      '<div class="dtimer" role="timer" aria-label="Time left">'+g(t.d,'DAYS','d')+'<i style="color:'+d.num+'">:</i>'+g(t.h,'HRS','h')+'<i style="color:'+d.num+'">:</i>'+g(t.m,'MINS','m')+'<i style="color:'+d.num+'">:</i>'+g(t.s,'SECS','s')+'</div></section>';
+      '<div class="dtimer" role="timer" aria-label="Time left">'+g(t.d,'Days','d')+g(t.h,'Hours','h')+g(t.m,'Minutes','m')+g(t.s,'Seconds','s')+'</div></section>';
   }
+  function ringFrac(k,v){var m={d:30,h:24,m:60,s:60}[k];return Math.round(Math.min(v,m)/m*1000)/10;}
   function dealTick(){
     var bar=document.getElementById('dealbar');if(!bar)return;
     var ms=dealLive();
     if(!ms){bar.remove();return;}
     var t=dealParts(ms);
-    ['d','h','m','s'].forEach(function(k){var el=bar.querySelector('[data-dk='+k+']');var v=pad2(t[k]);if(el&&el.getAttribute('data-v')!==v){el.setAttribute('data-v',v);el.innerHTML=dig(t[k]);}});
+    ['d','h','m','s'].forEach(function(k){
+      var el=bar.querySelector('[data-dk='+k+']'),v=String(t[k]);
+      if(el&&el.getAttribute('data-v')!==v){
+        el.setAttribute('data-v',v);el.textContent=v;
+        var fr=ringFrac(k,t[k]),ar=bar.querySelector('[data-ak='+k+']'),gg=bar.querySelector('[data-gk='+k+']');
+        if(ar)ar.setAttribute('stroke-dasharray',fr+' 100');
+        if(gg)gg.style.transform='rotate('+Math.round(fr*3.6*10)/10+'deg)';
+      }
+    });
   }
   setInterval(dealTick,1000);
   function heroHtml(r){
