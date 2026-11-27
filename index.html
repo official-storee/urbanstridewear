@@ -1792,24 +1792,32 @@ button.launchbtn{width:100%;cursor:pointer}
       }
     }catch(e){}
   }
-  render();
+  var sbCached=null;
+  function sbCacheSet(d){try{localStorage.setItem('us.sb.cache',JSON.stringify(d));}catch(e){}}
+  if(SBON){
+    try{var cr=localStorage.getItem('us.sb.cache');if(cr){var cj=JSON.parse(cr);if(cj&&cj.products&&cj.products.length){var S0=migrate(JSON.parse(JSON.stringify(cj)));PUB=cj;S=S0;sbCached=cj;}}}catch(e){sbCached=null;}
+    if(!sbCached)app.innerHTML='<div role="status" aria-live="polite" style="min-height:70vh;display:grid;place-items:center;color:var(--muted);font:600 14px var(--body,system-ui)">Loading\u2026</div>';
+  }
+  if(!SBON||sbCached)render();
   (async function(){
     if(SBON){
       sbLoadSess();
       var rs=await sbFetchState();
-      if(rs){try{var S2=migrate(JSON.parse(JSON.stringify(rs)));PUB=rs;S=S2;}catch(e){}}
+      var same=!!(rs&&sbCached&&JSON.stringify(rs)===JSON.stringify(sbCached));
+      if(rs){try{var S2=migrate(JSON.parse(JSON.stringify(rs)));PUB=rs;S=S2;sbCacheSet(rs);}catch(e){}}
       if(sbSess){
         if(sbSess.exp&&Date.now()>sbSess.exp)await sbRefresh();
         sbAdmin=await sbCheckAdmin();if(!sbAdmin)sbSaveSess(null);
       }
       isEditor=sbAdmin;editorChecked=true;
       if(isEditor)loadDraft();
-      var cur=route();if(!(cur==='admin'&&!isEditor&&false))render();
+      var cur=route(),y0=window.pageYOffset;
+      if(!(same&&!isEditor&&cur!=='admin')){render();if(sbCached&&y0>0)window.scrollTo(0,y0);}
       setInterval(async function(){
         if(isEditor||document.hidden)return;
         var n=await sbFetchState();
         if(n&&JSON.stringify(n)!==JSON.stringify(PUB)){
-          var y=window.pageYOffset;PUB=n;S=migrate(JSON.parse(JSON.stringify(n)));
+          var y=window.pageYOffset;PUB=n;S=migrate(JSON.parse(JSON.stringify(n)));sbCacheSet(n);
           var rt=route();if(rt==='admin')return;
           var inp=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
           if(inp)return;
